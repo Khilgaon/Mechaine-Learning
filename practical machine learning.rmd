@@ -1,0 +1,56 @@
+---
+title: "practical machine learning"
+output: html_document
+---
+# Data preparation
+##Loading the libraries
+```{r}
+library(caret)
+library(randomForest)
+```
+##Loading the data
+we have to load data to R and replace “#DIV/0!” to NA
+```{r}
+train<-read.csv("C:\\Users\\abeed\\Documents\\R\\pml-training.csv",na.string=c("#DIV/0!","","NA"))
+test<-read.csv("C:\\Users\\abeed\\Documents\\R\\pml-testing.csv",na.string=c("#DIV/0!","","NA"))
+```
+deleting columns with NA values
+```{r}
+train <- train[, colSums(is.na(train)) == 0]
+test <- test[, colSums(is.na(test)) == 0]
+```
+Let's also delete first 7 columns because they don't contribute to the prediction 
+```{r}
+train<-train[,8:length(colnames(train))]
+test<-test[,8:length(colnames(test))]
+```
+
+## Splitting the Training Data for Cross-validation
+```{r}
+inTrain <- createDataPartition(train$classe, p=0.70, list=F)
+train.final <- train[inTrain, ]
+crossvalidate <- train[-inTrain, ]
+```
+#Traing the model with Random Forest
+```{r}
+RandomForest.TrainModel<-train(classe ~ ., data=train.final, method="rf")
+RandomForest.TrainModel
+```
+#Model validation
+Now let's check how accurate our model is by predicting the classe from Crossvalidation data set and comparing the prediction values with actual ones
+```{r}
+rf.predict<-predict(RandomForest.TrainModel,crossvalidate)
+confusionMatrix(crossvalidate$classe,rf.predict)
+```
+## Accuracy and out-of-sample error
+```{r}
+accuracy<-postResample(rf.predict,crossvalidate$classe)
+acc.out<-accuracy[1]
+oose<-1-as.numeric(confusionMatrix(crossvalidate$classe,rf.predict)$overall[1])
+```
+Accuracy is 0.994 and Out-of-sample error is 0.006457094
+#Prediction - run the model
+```{r}
+result<-predict(RandomForest.TrainModel,test)
+result
+```
